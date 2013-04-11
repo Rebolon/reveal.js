@@ -10,7 +10,58 @@ io				= io.listen(app);
 
 var opts = {
 	port: 1948,
-	baseDir : __dirname + '/../../'
+	baseDir : __dirname + '/../../',
+    sessionsDir: __dirname + '/../../session/'
+};
+
+/**
+ * Creation de routes dynamiques:
+ *  * repertoire de base ./session + date + nom de la presentation
+ *  * il faut au moins 2 fichiers : 
+ *      * .revealjs : pour indiquer que c'est bien une prés revealjs
+ *      * index.html : pour le client ou le mode standard
+ *      * master.html : si on veut le multiplex actif en mode client/master
+ * 
+ *  * dans le html il faut bien :
+ *      * mettre / devant les lib communes à revealjs (lib/plugin/js/css)
+ *      * avoir un répertoire img dans sa présentation (session/date/mapres/img) pour y stocker ses images et ne pas commencer par / dans l'attribut src, mais par "img/monimage.img"
+ * 
+ */
+var createRoutes = function funcCreateRoutes() {
+    var listOfSessionDates = fs.readdirSync(opts.sessionsDir),
+        listOfSessionPres;
+
+    listOfSessionDates.forEach(function funcSessionRoutes(sessionDir) {
+        try {
+            listOfSessionPres = fs.readdirSync(opts.sessionsDir + sessionDir);
+            listOfSessionPres.forEach(function funcSessionPresRoutes(presDir) {
+                var route = "/" + sessionDir + "/" + presDir,
+                    filePath = opts.sessionsDir + sessionDir + "/" + presDir;
+
+                if (fs.existsSync(filePath + "/.revealjs")) {
+                    if (fs.existsSync(filePath + "/index.html")) {
+                        app.get(route, function(req, res) {
+                            fs.createReadStream(filePath + "/index.html").pipe(res);
+                        });
+                    }
+                    
+                    if (fs.existsSync(filePath + "/master.html")) {
+                        app.get(route + "/master", function(req, res) {
+                            fs.createReadStream(opts.sessionsDir + sessionDir + "/" + presDir + "/master.html").pipe(res);
+                        });
+                    }
+                    
+                    [ 'css', 'js', 'plugin', 'lib', 'img' ].forEach(function(dir) {
+                        if (fs.existsSync(filePath + "/" + dir)) {
+                            app.use(route + "/img/", staticDir(opts.sessionsDir + sessionDir + "/" + presDir + "/" + dir + "/"));
+                        }
+                    });
+                }
+            });
+        } catch (e) {
+            console.log('Exception: ', e);
+        }
+    });
 };
 
 io.sockets.on('connection', function(socket) {
@@ -28,9 +79,7 @@ app.configure(function() {
 	});
 });
 
-app.get("/", function(req, res) {
-	fs.createReadStream(opts.baseDir + '/index.html').pipe(res);
-});
+createRoutes();
 
 app.get("/token", function(req,res) {
 	var ts = new Date().getTime();
