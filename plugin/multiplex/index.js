@@ -66,6 +66,7 @@ var createRoutes = function funcCreateRoutes() {
 
 io.sockets.on('connection', function(socket) {
 	socket.on('slidechanged', function(slideData) {
+		if (typeof slideData.secret == 'undefined' || slideData.secret == null || slideData.secret === '') return;
 		if (createHash(slideData.secret) === slideData.socketId) {
 			slideData.secret = null;
 			socket.broadcast.emit(slideData.socketId, slideData);

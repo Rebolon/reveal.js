@@ -1,6 +1,6 @@
 {
   "name": "reveal.js",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "The HTML Presentation Framework",
   "homepage": "http://lab.hakim.se/reveal-js",
   "subdomain": "revealjs",
@@ -36,5 +36,11 @@
   },
   "scripts": {
     "start": "node plugin/multiplex/index.js"
-  }
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/hakimel/reveal.js/blob/master/LICENSE"
+    }
+  ]
 }

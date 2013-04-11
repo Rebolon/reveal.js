@@ -181,7 +181,7 @@ var Reveal = (function(){
 		dom.slides = document.querySelector( '.reveal .slides' );
 
 		// Progress bar
-		if( !dom.wrapper.querySelector( '.progress' ) && config.progress ) {
+		if( !dom.wrapper.querySelector( '.progress' ) ) {
 			var progressElement = document.createElement( 'div' );
 			progressElement.classList.add( 'progress' );
 			progressElement.innerHTML = '<span></span>';
@@ -189,7 +189,7 @@ var Reveal = (function(){
 		}
 
 		// Arrow controls
-		if( !dom.wrapper.querySelector( '.controls' ) && config.controls ) {
+		if( !dom.wrapper.querySelector( '.controls' ) ) {
 			var controlsElement = document.createElement( 'aside' );
 			controlsElement.classList.add( 'controls' );
 			controlsElement.innerHTML = '<div class="navigate-left"></div>' +
@@ -306,9 +306,6 @@ var Reveal = (function(){
 		// Make sure we've got all the DOM elements we need
 		setupDOM();
 
-		// Subscribe to input
-		addEventListeners();
-
 		// Updates the presentation to match the current configuration values
 		configure();
 
@@ -394,6 +391,20 @@ var Reveal = (function(){
 			}
 		}
 
+		postConfigure();
+
+	}
+
+	/**
+	 * Updates various parts of the presentatio after the
+	 * configuration has changed.
+	 */
+	function postConfigure() {
+
+		// Subscribe to input
+		removeEventListeners();
+		addEventListeners();
+
 		// Force a layout to make sure the current config is accounted for
 		layout();
 
@@ -460,16 +471,14 @@ var Reveal = (function(){
 		window.removeEventListener( 'hashchange', onWindowHashChange, false );
 		window.removeEventListener( 'resize', onWindowResize, false );
 
-		if( config.touch ) {
-			dom.wrapper.removeEventListener( 'touchstart', onTouchStart, false );
-			dom.wrapper.removeEventListener( 'touchmove', onTouchMove, false );
-			dom.wrapper.removeEventListener( 'touchend', onTouchEnd, false );
+		dom.wrapper.removeEventListener( 'touchstart', onTouchStart, false );
+		dom.wrapper.removeEventListener( 'touchmove', onTouchMove, false );
+		dom.wrapper.removeEventListener( 'touchend', onTouchEnd, false );
 
-			if( window.navigator.msPointerEnabled ) {
-				dom.wrapper.removeEventListener( 'MSPointerDown', onPointerDown, false );
-				dom.wrapper.removeEventListener( 'MSPointerMove', onPointerMove, false );
-				dom.wrapper.removeEventListener( 'MSPointerUp', onPointerUp, false );
-			}
+		if( window.navigator.msPointerEnabled ) {
+			dom.wrapper.removeEventListener( 'MSPointerDown', onPointerDown, false );
+			dom.wrapper.removeEventListener( 'MSPointerMove', onPointerMove, false );
+			dom.wrapper.removeEventListener( 'MSPointerUp', onPointerUp, false );
 		}
 
 		if ( config.progress && dom.progress ) {
@@ -977,9 +986,9 @@ var Reveal = (function(){
 	function resume() {
 
 		var wasPaused = dom.wrapper.classList.contains( 'paused' );
+		dom.wrapper.classList.remove( 'paused' );
 
 		cueAutoSlide();
-		dom.wrapper.classList.remove( 'paused' );
 
 		if( wasPaused ) {
 			dispatchEvent( 'resumed' );
@@ -1656,7 +1665,7 @@ var Reveal = (function(){
 
 		// Disregard the event if there's a focused element or a
 		// keyboard modifier key is present
-		if( hasFocus || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey ) return;
+		if( hasFocus || (event.shiftKey && event.keyCode !== 32) || event.altKey || event.ctrlKey || event.metaKey ) return;
 
 		var triggered = true;
 
@@ -1683,7 +1692,7 @@ var Reveal = (function(){
 			// end
 			case 35: slide( Number.MAX_VALUE ); break;
 			// space
-			case 32: isOverview() ? deactivateOverview() : navigateNext(); break;
+			case 32: isOverview() ? deactivateOverview() : event.shiftKey ? navigatePrev() : navigateNext(); break;
 			// return
 			case 13: isOverview() ? deactivateOverview() : triggered = false; break;
 			// b, period, Logitech presenter tools "black screen" button
@@ -1983,6 +1992,9 @@ var Reveal = (function(){
 
 		// Forces an update in slide layout
 		layout: layout,
+
+		// Returns an object with the available routes as booleans (left/right/top/bottom)
+		availableRoutes: availableRoutes,
 
 		// Toggles the overview mode on/off
 		toggleOverview: toggleOverview,
